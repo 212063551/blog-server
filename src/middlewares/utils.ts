@@ -8,7 +8,7 @@ import {
 import { UserTokenInfoType, tokenCertificationType } from '../global';
 
 /**
- * 令牌认证
+ *【 中间件 】- 令牌认证
  * @param  {string | string[] }  exclude 需要忽略的路由，注意如果有前缀，记得带上路由前缀
  */
 const tokenCertification = ({ exclude }: tokenCertificationType) => {
