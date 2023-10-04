@@ -1,8 +1,14 @@
 'use strict';
 
-import { Context } from 'koa';
+import { Context, Next } from 'koa';
+import jwt from 'jsonwebtoken';
 import { Users } from '../models';
-import { DatabaseQueryError } from '../middlewares/errors/globalError';
+import {
+	DatabaseQueryError,
+	RefreshTokenError,
+} from '../middlewares/errors/globalError';
+import { REFRESH_JWT_SECRET } from '../config/config';
+import { AutoRefreshTokenType } from '../global';
 
 /** 邮箱的正则表达式 */
 const EmailFormat = /^\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$/;
@@ -14,7 +20,7 @@ const NameFormat = /^[\u4E00-\u9FA5A-Za-z0-9_]{1,20}$/;
 const AccountFormat = /^[a-zA-Z0-9_]{11}$/;
 
 /** 成功返回 */
-const success = ({ data }: { data?: any }) => {
+const success = ({ data }: { data?: any | any[] }) => {
 	return {
 		status: '1',
 		info: 'OK',
@@ -49,13 +55,6 @@ const accountNumber = async (ctx: Context) => {
 		return { status: false, msg: 'error' };
 	}
 };
-/** 数据库时间加时区 */
-const createTime = () => {
-	const currentTime = new Date();
-	const offset = 8 * 60 * 60 * 1000; // 8小时的毫秒数偏移量
-	const currentTimeWithOffset = new Date(currentTime.getTime() + offset);
-	return currentTimeWithOffset.toISOString();
-};
 /** 邮箱脱敏 */
 const DesensitizeEmail = (email: string) => {
 	const atIndex = email.indexOf('@');
@@ -78,6 +77,25 @@ const convertToNormalTime = (timestamp: string) => {
 	const seconds = ('0' + date.getSeconds()).slice(-2);
 	return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 };
+/** 自动刷新令牌 */
+const autoRefreshToken = async (ctx: Context, next: Next) => {
+	const refreshToken = ctx.headers['x-refresh-token'] as string;
+	if (refreshToken) {
+		try {
+			const { account } = jwt.verify(
+				refreshToken,
+				REFRESH_JWT_SECRET
+			) as AutoRefreshTokenType;
+			const accessToken = jwt.sign({ account }, REFRESH_JWT_SECRET, {
+				expiresIn: '30m',
+			});
+			ctx.set('x-refresh-token', accessToken);
+		} catch (err: any) {
+			return ctx.app.emit('info', RefreshTokenError, ctx, 401);
+		}
+	}
+	await next();
+};
 
 export {
 	EmailFormat,
@@ -86,7 +104,7 @@ export {
 	AccountFormat,
 	success,
 	accountNumber,
-	createTime,
 	DesensitizeEmail,
 	convertToNormalTime,
+	autoRefreshToken,
 };
