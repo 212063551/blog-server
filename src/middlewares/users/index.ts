@@ -1,5 +1,6 @@
 import { Context, Next } from 'koa';
 import bcrypt from 'bcryptjs';
+import chalk from 'chalk';
 import { Users } from '../../models';
 import {
 	EmailFormat,
@@ -19,12 +20,14 @@ import {
 	UserMailboxExistsError,
 	AccountJudgmentError,
 	FindAccountError,
-	loginPassWordError,
+	LoginPassWordError,
 	DatabaseQueryError,
+	UserNoPermissionError,
 } from '../errors/globalError';
-import chalk from 'chalk';
 
-/** 注册传入值检查 */
+import { UserTokenInfoType } from '../../global';
+
+/**【 中间件 】- 注册传入值检查 */
 const userCheck = async (ctx: Context, next: Next) => {
 	const { nickname, password, email, avatarUrl, introduction } =
 		ctx.request.body;
@@ -61,7 +64,7 @@ const userCheck = async (ctx: Context, next: Next) => {
 	await next();
 };
 
-/** 邮箱是否已注册 */
+/**【 中间件 】- 邮箱是否已注册 */
 const userMailboxExists = async (ctx: Context, next: Next) => {
 	const { email } = ctx.request.body;
 	try {
@@ -75,7 +78,7 @@ const userMailboxExists = async (ctx: Context, next: Next) => {
 	await next();
 };
 
-/** 密码加密存储 */
+/**【 中间件 】- 密码加密存储 */
 const passwordEncryption = async (ctx: Context, next: Next) => {
 	const { password } = ctx.request.body;
 	const salt = bcrypt.genSaltSync(10);
@@ -84,7 +87,7 @@ const passwordEncryption = async (ctx: Context, next: Next) => {
 	await next();
 };
 
-/** 账户判断 */
+/**【 中间件 】- 账户判断 */
 const accountJudgment = async (ctx: Context, next: Next) => {
 	const { account } = ctx.request.body;
 	if (!EmailFormat.test(account)) {
@@ -99,7 +102,7 @@ const accountJudgment = async (ctx: Context, next: Next) => {
 	await next();
 };
 
-/** 用户或邮箱是否存在 */
+/**【 中间件 】- 用户或邮箱是否存在 */
 const userExists = async (ctx: Context, next: Next) => {
 	const { email, account } = ctx.state;
 	try {
@@ -124,11 +127,20 @@ const userExists = async (ctx: Context, next: Next) => {
 	await next();
 };
 
-/** 密码验证 */
+/**【 中间件 】- 密码验证 */
 const passwordVerification = async (ctx: Context, next: Next) => {
 	const { password } = ctx.request.body;
 	if (bcrypt.compareSync(password, ctx.state.userInfo.password) !== true) {
-		return ctx.app.emit('info', loginPassWordError, ctx);
+		return ctx.app.emit('info', LoginPassWordError, ctx);
+	}
+	await next();
+};
+
+/**【 中间件 】- 只有管理员权限才运行访问 */
+const manageLicenses = async (ctx: Context, next: Next) => {
+	const { status } = ctx.state.userTokenInfo as UserTokenInfoType;
+	if (status !== 'admin') {
+		return ctx.app.emit('info', UserNoPermissionError, ctx);
 	}
 	await next();
 };
@@ -140,4 +152,5 @@ export {
 	accountJudgment,
 	userExists,
 	passwordVerification,
+	manageLicenses,
 };
