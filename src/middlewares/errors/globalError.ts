@@ -48,7 +48,7 @@ const data = {
 		infocode: '1008',
 	},
 	/** 注册错误 */
-	registerError: {
+	RegisterError: {
 		status: '0',
 		info: 'REGISTRATION_ERROR',
 		infocode: '1009',
@@ -66,13 +66,26 @@ const data = {
 		infocode: '1011',
 	},
 	/** 登录密码错误 */
-	loginPassWordError: {
+	LoginPassWordError: {
 		status: '0',
 		info: 'PASSWORD_ERROR',
 		infocode: '1012',
 	},
+	/** 查询所有用户错误 */
+	QueryAllUsersError: {
+		status: '0',
+		info: 'QUERY_All_USERES_ERROR',
+		infocode: '1013',
+	},
+	/** 用户登录错误 */
+	LoginError: {
+		status: '0',
+		info: 'LOGIN_ERROR',
+		infocode: '1014',
+	},
 
 	// 30** 开头均为令牌类错误
+
 	/** 令牌过期错误 */
 	TokenExpiredError: {
 		status: '0',
@@ -91,12 +104,23 @@ const data = {
 		info: 'REFRESH_TOKEN_ERROR',
 		infocode: '3002',
 	},
+
 	// 40** 开头均为数据库类错误
+
 	/** 数据库查询错误 */
 	DatabaseQueryError: {
 		status: '0',
-		info: '数据库查询错误',
+		info: 'DATABASE_QUERY_ERROR',
 		infocode: '4000',
+	},
+
+	// 50** 开头均为权限错误
+
+	/** 当前登录用户无权限 */
+	UserNoPermissionError: {
+		status: '0',
+		info: 'USER_NO_PERMISSION',
+		infocode: '5000',
 	},
 };
 
