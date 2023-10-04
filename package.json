@@ -1,0 +1,37 @@
+{
+	"name": "ts",
+	"version": "1.0.0",
+	"main": "index.js",
+	"license": "MIT",
+	"scripts": {
+		"build": "tsc",
+		"start:dev": "nodemon ./src/main.ts",
+		"start:prod": "node dist/main.js"
+	},
+	"dependencies": {
+		"@koa/cors": "^4.0.0",
+		"bcryptjs": "^2.4.3",
+		"chalk": "4.1.2",
+		"ejs": "^3.1.9",
+		"jsonwebtoken": "^9.0.2",
+		"koa": "^2.14.2",
+		"koa-body": "^6.0.1",
+		"koa-router": "^12.0.0",
+		"koa-static": "^5.0.0",
+		"koa-views": "^8.1.0",
+		"mongodb": "^6.1.0",
+		"mongoose": "^7.5.3"
+	},
+	"devDependencies": {
+		"@types/bcryptjs": "^2.4.4",
+		"@types/jsonwebtoken": "^9.0.3",
+		"@types/koa": "^2.13.9",
+		"@types/koa-router": "^7.4.5",
+		"@types/koa-static": "^4.0.2",
+		"@types/koa__cors": "^4.0.1",
+		"@types/mongoose": "^5.11.97",
+		"@types/node": "^20.6.5",
+		"nodemon": "^3.0.1",
+		"typescript": "^5.2.2"
+	}
+}

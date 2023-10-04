@@ -1,0 +1,11 @@
+/node_modules
+/logs
+/src/config/config.ts
+/public
+.gitconfig
+.DS_Store
+**/.DS_Store
+package-lock.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
