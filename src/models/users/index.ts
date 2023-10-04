@@ -1,7 +1,7 @@
 'use strict';
 
 import mongoose from 'mongoose';
-import { createTime } from '../../utils/utils';
+import { TIME_ZONE_OFFSET } from '../../config/config';
 
 const Schema = mongoose.Schema;
 
@@ -19,7 +19,18 @@ const UserSchema = new Schema({
 	},
 	avatarUrl: { type: String, default: 'default.jpg', maxlength: 255 },
 	introduction: { type: String, default: '这里什么也没有...', maxlength: 200 },
-	createTime: { type: String, default: createTime },
+	createdAt: {
+		type: String,
+		default: new Date(new Date().getTime() + TIME_ZONE_OFFSET).toISOString(),
+	},
+	updatedAt: {
+		type: String,
+		default: new Date(new Date().getTime() + TIME_ZONE_OFFSET).toISOString(),
+	},
+});
+UserSchema.pre('findOneAndUpdate', function (next) {
+	this.set({ updatedAt: new Date() });
+	next();
 });
 
 const Users = mongoose.model('Users', UserSchema);
