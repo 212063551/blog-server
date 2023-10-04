@@ -1,7 +1,7 @@
 import Router from 'koa-router';
 const router = new Router({ prefix: '/' });
 import {
-	allUsers,
+	queryAllUsers,
 	queryUsers,
 	register,
 	login,
@@ -15,23 +15,34 @@ import {
 	accountJudgment,
 	userExists,
 	passwordVerification,
+	manageLicenses,
 } from '../middlewares/users';
 
 /**
  * @public
  * 查询全部用户
+ * @param {number} pageSize - 当前页码，默认 1
+ * @param {number} pageCurrent - 每页显示的数量，默认 10
  */
-router.get('allusers', allUsers);
+router.get('queryallusers', manageLicenses, queryAllUsers);
 
 /**
  * @public
- * 根据关禁词查询用户
+ *【 路由 】- 根据关禁词查询用户
+ * @param {number} pageSize - 当前页码，默认 1
+ * @param {number} pageCurrent - 每页显示的数量，默认 10
+ * @param {string} keyword - 当前页码，默认 1
  */
-router.post('queryusers', queryUsers);
+router.post('queryusers', manageLicenses, queryUsers);
 
 /**
  * @public
- * 用户注册
+ *【 路由 】- 用户注册
+ * @param {number} nickname - 页码
+ * @param {number} password - 用户密码
+ * @param {string} email - 用户邮箱
+ * @param {string} avatarUrl - [可选] 用户头像url
+ * @param {string} introduction -[可选] 用户介绍
  */
 router.post(
 	'register',
@@ -43,7 +54,9 @@ router.post(
 
 /**
  * @public
- * 用户登录
+ *【 路由 】- 用户登录
+ * @param {number} account - 账号 / 邮箱 系统自动判断
+ * @param {number} password - 用户密码
  */
 router.post('login', accountJudgment, userExists, passwordVerification, login);
 
