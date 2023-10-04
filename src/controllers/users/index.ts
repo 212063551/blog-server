@@ -1,94 +1,113 @@
 import { Context } from 'koa';
-import jwt from 'jsonwebtoken';
-import { registerAPI, allUsersAPI } from '../../services/users';
+import chalk from 'chalk';
 import {
-	DesensitizeEmail,
-	convertToNormalTime,
-	success,
-} from '../../utils/utils';
-import { JWT_SECRET, REFRESH_JWT_SECRET } from '../../config/config';
-import { registerError } from '../../middlewares/errors/globalError';
-import { registerType } from '../../global';
+	registerAPI,
+	queryAllUsersAPI,
+	queryUsersAPI,
+	loginAPI,
+} from '../../services/users';
+import {
+	RegisterError,
+	QueryAllUsersError,
+	LoginError,
+} from '../../middlewares/errors/globalError';
+import { success } from '../../utils/utils';
+import { RegisterValueType, RegisterReturnType } from '../../global';
 
 /**
  * @privateAPI
- * 查询全部用户
+ *【 服务 】- 查询全部用户
  */
-const allUsers = async (ctx: Context) => {
-	const { data, status } = await allUsersAPI();
+const queryAllUsers = async (ctx: Context) => {
+	const { pageSize, pageCurrent } = ctx.request.query;
+	const { status, data } = await queryAllUsersAPI({
+		page: Number(pageSize),
+		limit: Number(pageCurrent),
+	});
 	if (status) {
-		ctx.body = success({ data: [{ data }] });
+		return (ctx.body = success({ data }));
 	} else {
-		return ctx.app.emit('info', registerError, ctx);
+		console.error(chalk.red(data));
+		return ctx.app.emit('info', QueryAllUsersError, ctx);
 	}
 };
 
 /**
  * @privateAPI
- * 根据关键词查询用户
+ *【 服务 】- 根据关键词查询用户
  */
-const queryUsers = async () => {};
+const queryUsers = async (ctx: Context) => {
+	const { keyword, pageSize, pageCurrent } = ctx.request.query;
+	const { status, data } = await queryUsersAPI({
+		keyword,
+		page: Number(pageSize),
+		limit: Number(pageCurrent),
+	});
+	if (status) {
+		return (ctx.body = success({ data }));
+	} else {
+		console.error(chalk.red(data));
+		return ctx.app.emit('info', QueryAllUsersError, ctx);
+	}
+};
 
 /**
  * @privateAPI
- * 用户注册
+ *【 服务 】- 用户注册
  */
 const register = async (ctx: Context) => {
-	const { nickname, password, email, avatarUrl, introduction, account } =
-		ctx.request.body;
-	const { data, status } = (await registerAPI({
+	const {
+		nickname,
+		password,
+		email,
+		avatarUrl,
+		introduction,
+		account,
+	}: RegisterValueType = ctx.request.body;
+	const { data, status, error }: RegisterReturnType = await registerAPI({
 		nickname,
 		account,
 		password,
 		email,
 		avatarUrl,
 		introduction,
-	})) as registerType;
+	});
 	if (status) {
-		ctx.body = success({ data: [{ account: data.account }] });
+		return (ctx.body = success({ data: [{ account: data?.account }] }));
 	} else {
-		return ctx.app.emit('info', registerError, ctx);
+		console.error(chalk.red(error));
+		return ctx.app.emit('info', RegisterError, ctx);
 	}
 };
 
 /**
  * @privateAPI
- * 用户登录
+ *【 服务 】- 用户登录
  */
 const login = async (ctx: Context) => {
-	try {
-		const { _id, __v, password, ...user } = ctx.state.userInfo._doc;
-		user.createTime = convertToNormalTime(user.createTime);
-		user.email = DesensitizeEmail(user.email);
-		const accessToken = jwt.sign(user, JWT_SECRET, {
-			expiresIn: '30m',
-		});
-		const refreshToken = jwt.sign(
-			{ id: user.account, nickname: user.nickname },
-			REFRESH_JWT_SECRET,
-			{
-				expiresIn: '7h',
-			}
-		);
-		ctx.set('x-refresh-token', accessToken);
-		return (ctx.body = success({
-			data: { accessToken: accessToken, refreshToken: refreshToken },
-		}));
-	} catch (error) {
-		console.error(error);
+	const { data, status } = (await loginAPI({
+		userInfo: ctx.state.userInfo._doc,
+	})) as any;
+
+	if (status) {
+		ctx.set('x-refresh-token', data.accessToken);
+		return (ctx.body = success({ data: [data] }));
+	} else {
+		console.error(chalk.red(data));
+		return ctx.app.emit('info', LoginError, ctx);
 	}
 };
 
 /**
  * @privateAPI
- * 修改用户信息
+ *【 服务 】- 修改用户信息
  */
 const reviseUsers = async () => {};
 
 /**
  * @privateAPI
- * 删除用户
+ *【 服务 】- 删除用户
  */
 const strikeUsers = async () => {};
 
-export { allUsers, queryUsers, register, login, reviseUsers, strikeUsers };
+export { queryAllUsers, queryUsers, register, login, reviseUsers, strikeUsers };
