@@ -7,7 +7,7 @@ import staticDir from 'koa-static';
 import { AutoLoadRoutes } from '../utils/router';
 import { bodyConfig } from '../config/default.config';
 import { errorHandler } from '../middlewares/errors';
-import { autoRefreshToken, tokenCertification } from '../middlewares/utils';
+import { tokenCertification } from '../middlewares/utils';
 
 const server = new Koa();
 const router: any = new Router();
@@ -18,9 +18,7 @@ AutoLoadRoutes(router);
 server.use(cors({}));
 server.use(bodyConfig());
 server.use(staticDir('./public'));
-// 开发期间暂时关闭
 // server.use(tokenCertification({ exclude: ['/login'] }));
-// server.use(autoRefreshToken);
 server.use(views(path.join(__dirname, '../views'), { extension: 'ejs' }));
 server.use(router.routes());
 server.on('info', errorHandler);
