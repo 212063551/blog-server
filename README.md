@@ -6,12 +6,11 @@
 
 所有 API 均遵守以下规则
 
-- 查询全部 `all`
+- 查询全部 `queryAll`
 - 关键字查询 `query`
 - 添加 `add`
 - 修改 `revise`
-- 删除 `strike
-`
+- 删除 `strike`
 
 ### 运行配置
 
@@ -61,6 +60,8 @@ const data = {
 	REFRESH_JWT_SECRET: '',
 	/** JWT的过期时间  */
 	EXPIRES_IN: '30m',
+	/** 数据库使用到 东八区   */
+	TIME_ZONE_OFFSET: 8 * 60 * 60 * 1000,
 };
 export = data;
 ```
