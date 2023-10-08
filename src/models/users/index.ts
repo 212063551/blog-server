@@ -11,12 +11,7 @@ const UserSchema = new Schema({
 	account: { type: String, required: true, maxlength: 100 },
 	password: { type: String, required: true, maxlength: 255 },
 	email: { type: String, required: true, maxlength: 100 },
-	status: {
-		type: String,
-		required: true,
-		enum: ['user', 'admin', 'root'],
-		default: 'user',
-	},
+	admin: { type: Boolean, required: true, default: false },
 	avatarUrl: { type: String, default: 'default.jpg', maxlength: 255 },
 	introduction: { type: String, default: '这里什么也没有...', maxlength: 200 },
 	createdAt: {
@@ -29,7 +24,9 @@ const UserSchema = new Schema({
 	},
 });
 UserSchema.pre('findOneAndUpdate', function (next) {
-	this.set({ updatedAt: new Date() });
+	this.set({
+		updatedAt: new Date(new Date().getTime() + TIME_ZONE_OFFSET).toISOString(),
+	});
 	next();
 });
 
