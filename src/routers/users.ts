@@ -7,15 +7,18 @@ import {
 	login,
 	reviseUsers,
 	strikeUsers,
+	revisePassword,
 } from '../controllers/users';
 import {
 	userCheck,
 	userMailboxExists,
-	passwordEncryption,
 	accountJudgment,
 	userExists,
 	passwordVerification,
 	manageLicenses,
+	passwordFormat,
+	userValueCheck,
+	pagination,
 } from '../middlewares/users';
 
 /**
@@ -24,7 +27,7 @@ import {
  * @param {number} pageSize - 当前页码，默认 1
  * @param {number} pageCurrent - 每页显示的数量，默认 10
  */
-router.get('queryallusers', manageLicenses, queryAllUsers);
+router.get('queryallusers', manageLicenses, pagination, queryAllUsers);
 
 /**
  * @public
@@ -33,24 +36,18 @@ router.get('queryallusers', manageLicenses, queryAllUsers);
  * @param {number} pageCurrent - 每页显示的数量，默认 10
  * @param {string} keyword - 当前页码，默认 1
  */
-router.post('queryusers', manageLicenses, queryUsers);
+router.post('queryusers', manageLicenses, pagination, queryUsers);
 
 /**
  * @public
  *【 路由 】- 用户注册
- * @param {number} nickname - 页码
+ * @param {number} nickname - 用户名
  * @param {number} password - 用户密码
  * @param {string} email - 用户邮箱
  * @param {string} avatarUrl - [可选] 用户头像url
  * @param {string} introduction -[可选] 用户介绍
  */
-router.post(
-	'register',
-	userCheck,
-	userMailboxExists,
-	passwordEncryption,
-	register
-);
+router.post('register', userCheck, userMailboxExists, register);
 
 /**
  * @public
@@ -60,14 +57,37 @@ router.post(
  */
 router.post('login', accountJudgment, userExists, passwordVerification, login);
 
-/**
- * 修改用户信息
- */
-router.put('reviseusers', reviseUsers);
+/** 暂不开发忘记密码功能，如如需密码变更，请联系管理员 */
 
 /**
- * 删除用户
+ * @public
+ *【 路由 】- 修改密码
+ * @param {number} newPassword - 新密码
+ * @param {string} password - 原密码
+ * @param {string} account - 账号 注意：只有管理员权限传入的值才有效，非管理默认使用当前登录用户的token 里的值
  */
-router.delete('strikeusers', strikeUsers);
+router.patch(
+	'revisepassword',
+	passwordFormat,
+	passwordVerification,
+	revisePassword
+);
+
+/**
+ * @public
+ *【 路由 】- 修改用户信息
+ * @param {number} nickname - 用户名
+ * @param {string} email - 用户邮箱
+ * @param {string} avatarUrl - 用户头像url
+ * @param {string} introduction - 用户介绍
+ */
+router.put('reviseusers', userValueCheck, userMailboxExists, reviseUsers);
+
+/**
+ * @public
+ *【 路由 】- 修改用户信息
+ * @param {string｜string[] } account - 账号
+ */
+router.delete('strikeusers', manageLicenses, strikeUsers);
 
 export default router;
