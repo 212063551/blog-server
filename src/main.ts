@@ -4,7 +4,7 @@ import chalk from 'chalk';
 import server from './bin/www';
 import { PORT } from './config/config';
 import { error } from 'console';
-import { MongoConnect, RedisConnect } from './db/db';
+import { MongoConnect, redis } from './db/db';
 
 server.listen(PORT, () => {
 	error(
@@ -13,5 +13,5 @@ server.listen(PORT, () => {
 [ncxicn] 监听运行端口: ${PORT}
 		`)
 	);
-	MongoConnect(), RedisConnect();
+	MongoConnect(), redis;
 });
