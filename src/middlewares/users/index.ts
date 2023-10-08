@@ -25,8 +25,6 @@ import {
 	UserNoPermissionError,
 } from '../errors/globalError';
 
-import { UserTokenInfoType } from '../../global';
-
 /**【 中间件 】- 注册传入值检查 */
 const userCheck = async (ctx: Context, next: Next) => {
 	const { nickname, password, email, avatarUrl, introduction } =
@@ -57,7 +55,7 @@ const userCheck = async (ctx: Context, next: Next) => {
 			return ctx.app.emit('info', UserIntroductionError, ctx);
 		}
 	}
-	if (account.status !== true) {
+	if (account.state !== true) {
 		return ctx.app.emit('info', AccountGenerationError, ctx);
 	}
 	ctx.request.body.account = account.msg;
@@ -67,6 +65,8 @@ const userCheck = async (ctx: Context, next: Next) => {
 /**【 中间件 】- 邮箱是否已注册 */
 const userMailboxExists = async (ctx: Context, next: Next) => {
 	const { email } = ctx.request.body;
+	console.log(email);
+
 	try {
 		if (await Users.findOne({ email })) {
 			return ctx.app.emit('info', UserMailboxExistsError, ctx);
@@ -78,12 +78,12 @@ const userMailboxExists = async (ctx: Context, next: Next) => {
 	await next();
 };
 
-/**【 中间件 】- 密码加密存储 */
-const passwordEncryption = async (ctx: Context, next: Next) => {
-	const { password } = ctx.request.body;
-	const salt = bcrypt.genSaltSync(10);
-	const hash = bcrypt.hashSync(password, salt);
-	ctx.request.body.password = hash;
+/**【 中间件 】- 分页 */
+const pagination = async (ctx: Context, next: Next) => {
+	const { pageSize, pageCurrent, keyword } = ctx.request.query;
+	if (!pageSize || !pageCurrent) {
+		return ctx.app.emit('info', MissingRequiredError, ctx);
+	}
 	await next();
 };
 
@@ -138,9 +138,59 @@ const passwordVerification = async (ctx: Context, next: Next) => {
 
 /**【 中间件 】- 只有管理员权限才运行访问 */
 const manageLicenses = async (ctx: Context, next: Next) => {
-	const { status } = ctx.state.userTokenInfo as UserTokenInfoType;
-	if (status !== 'admin') {
+	const { admin } = ctx.state.userInfo;
+	if (admin !== true) {
 		return ctx.app.emit('info', UserNoPermissionError, ctx);
+	}
+	await next();
+};
+
+/**【 中间件 】- 新旧密码是否符合密码格式 */
+const passwordFormat = async (ctx: Context, next: Next) => {
+	const { newPassword, password } = ctx.request.body;
+	if (!newPassword || !password) {
+		return ctx.app.emit('info', MissingRequiredError, ctx);
+	} else {
+		if (!PasswordFormat.test(newPassword)) {
+			return ctx.app.emit('info', PasswordFormatError, ctx);
+		}
+		if (!PasswordFormat.test(password)) {
+			return ctx.app.emit('info', PasswordFormatError, ctx);
+		}
+	}
+	await next();
+};
+
+/**【 中间件 】- 修改用户用户检查 */
+const userValueCheck = async (ctx: Context, next: Next) => {
+	const { nickname, email, avatarUrl, introduction } = ctx.request.body;
+	if (nickname) {
+		if (!NameFormat.test(nickname)) {
+			return ctx.app.emit('info', NameFormatError, ctx);
+		}
+	}
+	if (email) {
+		if (!EmailFormat.test(email)) {
+			return ctx.app.emit('info', EmailFormatError, ctx);
+		}
+	}
+	if (avatarUrl) {
+		if (avatarUrl.length > 255) {
+			return ctx.app.emit('info', AvatarLengthError, ctx);
+		}
+	}
+	if (introduction) {
+		if (introduction.length > 200) {
+			return ctx.app.emit('info', UserIntroductionError, ctx);
+		}
+	}
+	if (
+		nickname == undefined &&
+		email == undefined &&
+		avatarUrl == undefined &&
+		introduction === undefined
+	) {
+		return ctx.app.emit('info', MissingRequiredError, ctx);
 	}
 	await next();
 };
@@ -148,9 +198,11 @@ const manageLicenses = async (ctx: Context, next: Next) => {
 export {
 	userCheck,
 	userMailboxExists,
-	passwordEncryption,
 	accountJudgment,
 	userExists,
 	passwordVerification,
 	manageLicenses,
+	passwordFormat,
+	userValueCheck,
+	pagination,
 };
