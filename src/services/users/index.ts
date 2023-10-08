@@ -2,8 +2,10 @@ import chalk from 'chalk';
 import jwt from 'jsonwebtoken';
 import { Users } from '../../models';
 import { QueryKeywordType, RegisterValueType } from '../../global';
-import { convertToNormalTime } from '../../utils/utils';
+import { calculateHash, convertToNormalTime } from '../../utils/utils';
 import { JWT_SECRET, REFRESH_JWT_SECRET } from '../../config/config';
+import { passwordEncryption } from '../../utils/utils';
+import { redis } from '../../db/db';
 
 /**
  * @privateAPI
@@ -41,14 +43,15 @@ const queryAllUsersAPI = async ({
 			Users.aggregate([{ $count: 'count' }]),
 		]);
 		const userInfo = usersInfoData.map((item, i) => {
-			item.createTime = convertToNormalTime(item.createTime);
+			item.createdAt = convertToNormalTime(item.createdAt);
+			item.updatedAt = convertToNormalTime(item.updatedAt);
 			return item;
 		});
 		const total = totalDocuments[0]?.count || 0;
-		return { status: true, data: { total, data: userInfo } };
+		return { state: true, data: { total, rows: userInfo } };
 	} catch (error) {
 		console.error(chalk.red(error));
-		return { status: false, data: error };
+		return { state: false, error };
 	}
 };
 
@@ -60,74 +63,73 @@ const queryAllUsersAPI = async ({
  * @param {string | undefined } keyword - 每页显示的数量
  */
 const queryUsersAPI = async ({ keyword, page, limit }: QueryKeywordType) => {
-	const regex = new RegExp(keyword, 'i'); // 创建正则表达式，忽略大小写
-
-	const [usersInfoData, totalDocuments] = await Promise.all([
-		Users.aggregate([
-			{
-				$match: {
-					$or: [
-						{ nickname: { $regex: regex } },
-						{ account: { $regex: regex } },
-						{ email: { $regex: regex } },
-						{ status: { $regex: regex } },
-						{ introduction: { $regex: regex } },
-					],
-				},
-			},
-			{ $skip: (page - 1) * limit },
-			{ $limit: limit },
-			{
-				$project: {
-					nickname: 1,
-					account: 1,
-					email: 1,
-					status: 1,
-					avatarUrl: 1,
-					introduction: 1,
-					createdAt: 1,
-					updatedAt: 1,
-				},
-			},
-		]),
-		Users.aggregate([
-			{
-				$match: {
-					$or: [
-						{ nickname: { $regex: regex } },
-						{ account: { $regex: regex } },
-						{ email: { $regex: regex } },
-						{ status: { $regex: regex } },
-						{ introduction: { $regex: regex } },
-					],
-				},
-			},
-			{
-				$project: {
-					nickname: 1,
-					account: 1,
-					email: 1,
-					status: 1,
-					avatarUrl: 1,
-					introduction: 1,
-					createdAt: 1,
-					updatedAt: 1,
-				},
-			},
-			{ $count: 'count' },
-		]),
-	]);
-	const userInfo = usersInfoData.map((item) => {
-		item.createdAt = convertToNormalTime(item.createdAt);
-		item.updatedAt = convertToNormalTime(item.updatedAt);
-		return item;
-	});
-	const total = totalDocuments[0]?.count || 0;
 	try {
-		return { status: true, data: { total, data: userInfo } };
+		const regex = new RegExp(keyword, 'i'); // 创建正则表达式，忽略大小写
+		const [usersInfoData, totalDocuments] = await Promise.all([
+			Users.aggregate([
+				{
+					$match: {
+						$or: [
+							{ nickname: { $regex: regex } },
+							{ account: { $regex: regex } },
+							{ email: { $regex: regex } },
+							{ admin: { $regex: regex } },
+							{ introduction: { $regex: regex } },
+						],
+					},
+				},
+				{ $skip: (page - 1) * limit },
+				{ $limit: limit },
+				{
+					$project: {
+						nickname: 1,
+						account: 1,
+						email: 1,
+						admin: 1,
+						avatarUrl: 1,
+						introduction: 1,
+						createdAt: 1,
+						updatedAt: 1,
+					},
+				},
+			]),
+			Users.aggregate([
+				{
+					$match: {
+						$or: [
+							{ nickname: { $regex: regex } },
+							{ account: { $regex: regex } },
+							{ email: { $regex: regex } },
+							{ admin: { $regex: regex } },
+							{ introduction: { $regex: regex } },
+						],
+					},
+				},
+				{
+					$project: {
+						nickname: 1,
+						account: 1,
+						email: 1,
+						admin: 1,
+						avatarUrl: 1,
+						introduction: 1,
+						createdAt: 1,
+						updatedAt: 1,
+					},
+				},
+				{ $count: 'count' },
+			]),
+		]);
+		const userInfo = usersInfoData.map((item) => {
+			item.createdAt = convertToNormalTime(item.createdAt);
+			item.updatedAt = convertToNormalTime(item.updatedAt);
+			return item;
+		});
+		const total = totalDocuments[0]?.count || 0;
+		return { state: true, data: { total, rows: userInfo } };
 	} catch (error) {
 		console.error(chalk.red(error));
-		return { status: false, data: error };
+		return { state: false, error };
 	}
 };
 
@@ -158,10 +160,10 @@ const registerAPI = async ({
 			avatarUrl,
 			introduction,
 		});
-		return { status: true, data: await newUser.save() };
+		return { state: true, data: await newUser.save() };
 	} catch (error) {
 		console.error(chalk.red(error));
-		return { status: false, error };
+		return { state: false, error };
 	}
 };
 
@@ -173,13 +175,10 @@ const registerAPI = async ({
 const loginAPI = async ({ userInfo }: { userInfo: any }) => {
 	try {
 		const { _id, __v, password, ...user } = userInfo;
-		const accessToken = jwt.sign(
-			{ account: user.account, status: user.status },
-			JWT_SECRET,
-			{
-				expiresIn: '30m',
-			}
-		);
+
+		const accessToken = jwt.sign({ account: user.account }, JWT_SECRET, {
+			expiresIn: '30m',
+		});
 		const refreshToken = jwt.sign(
 			{ account: user.account },
 			REFRESH_JWT_SECRET,
@@ -187,13 +186,37 @@ const loginAPI = async ({ userInfo }: { userInfo: any }) => {
 				expiresIn: '7h',
 			}
 		);
+
 		return {
-			status: true,
+			state: true,
 			data: { accessToken, refreshToken },
 		};
 	} catch (error) {
 		console.error(chalk.red(error));
-		return { status: false, data: error };
+		return { state: false, error };
+	}
+};
+/**
+ * @privateAPI
+ *【 服务API 】- 修改密码
+ */
+const revisePasswordAPI = async ({
+	newPassword,
+	account,
+}: {
+	newPassword: string;
+	account: string;
+}) => {
+	try {
+		const data = await Users.findOneAndUpdate(
+			{ account },
+			{ $set: { password: passwordEncryption(newPassword) } },
+			{ returnOriginal: false }
+		);
+		return { state: true, data };
+	} catch (error) {
+		console.error(chalk.red(error));
+		return { state: false, error };
 	}
 };
 
@@ -201,13 +224,45 @@ const loginAPI = async ({ userInfo }: { userInfo: any }) => {
  * @privateAPI
  *【 服务API 】- 修改用户信息
  */
-const reviseUsersAPI = async () => {};
+const reviseUsersAPI = async ({
+	nickname,
+	email,
+	avatarUrl,
+	introduction,
+	account,
+}: {
+	nickname: string;
+	email: string;
+	avatarUrl: string;
+	introduction: string;
+	account: string;
+}) => {
+	try {
+		const data = await Users.findOneAndUpdate(
+			{ account },
+			{ $set: { nickname, email, avatarUrl, introduction } },
+			{ returnOriginal: false }
+		);
+		return { state: true, data };
+	} catch (error) {
+		console.error(chalk.red(error));
+		return { state: false, error };
+	}
+};
 
 /**
  * @privateAPI
  *【 服务API 】- 删除用户
  */
-const strikeUsersAPI = async () => {};
+const strikeUsersAPI = async ({ account }: { account: string }) => {
+	const { acknowledged } = await Users.deleteMany({ account });
+	try {
+		return { state: true, data: acknowledged };
+	} catch (error) {
+		console.error(chalk.red(error));
+		return { state: false, error };
+	}
+};
 
 export {
 	queryAllUsersAPI,
@@ -216,4 +271,5 @@ export {
 	loginAPI,
 	reviseUsersAPI,
 	strikeUsersAPI,
+	revisePasswordAPI,
 };
