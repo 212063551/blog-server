@@ -2,6 +2,8 @@
 
 import { Context, Next } from 'koa';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 import { Users } from '../models';
 import {
 	DatabaseQueryError,
@@ -46,17 +48,20 @@ const accountNumber = async (ctx: Context) => {
 	try {
 		const accountExists = await Users.findOne({ account: generateAccount() });
 		if (accountExists) {
-			return { status: true, msg: generateAccount() };
+			return { state: true, msg: generateAccount() };
 		} else {
-			return { status: true, msg: generateAccount() };
+			return { state: true, msg: generateAccount() };
 		}
 	} catch (error) {
 		ctx.app.emit('info', DatabaseQueryError, ctx);
-		return { status: false, msg: 'error' };
+		return { state: false, msg: 'error' };
 	}
 };
 /** 邮箱脱敏 */
-const DesensitizeEmail = (email: string) => {
+const DesensitizeEmail = (
+	/** 需要脱敏的邮箱 */
+	email: string
+) => {
 	const atIndex = email.indexOf('@');
 	if (atIndex !== -1) {
 		const username = email.substring(0, atIndex);
@@ -67,7 +72,10 @@ const DesensitizeEmail = (email: string) => {
 	return email;
 };
 /** 时间转换 */
-const convertToNormalTime = (timestamp: string) => {
+const convertToNormalTime = (
+	/** 需要转换的 UTC时间 */
+	timestamp: string
+) => {
 	const date = new Date(timestamp);
 	const year = date.getFullYear();
 	const month = ('0' + (date.getMonth() + 1)).slice(-2);
@@ -96,6 +104,26 @@ const autoRefreshToken = async (ctx: Context, next: Next) => {
 	}
 	await next();
 };
+/** 密码加密存储 */
+const passwordEncryption = (
+	/** 需要加密的密码 */
+	password: string
+) => {
+	const salt = bcrypt.genSaltSync(10);
+	const hash = bcrypt.hashSync(password, salt);
+	return hash;
+};
+/** 计算 Hash值 */
+const calculateHash = (
+	/** 需要计算的数据 */
+	data: any,
+	/** 建议使用 sha256 */
+	algorithm: string
+) => {
+	const hash = crypto.createHash(algorithm);
+	hash.update(JSON.stringify(data));
+	return hash.digest('hex');
+};
 
 export {
 	EmailFormat,
@@ -107,4 +135,6 @@ export {
 	DesensitizeEmail,
 	convertToNormalTime,
 	autoRefreshToken,
+	passwordEncryption,
+	calculateHash,
 };
