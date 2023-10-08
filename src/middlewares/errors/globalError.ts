@@ -105,6 +105,15 @@ const data = {
 		infocode: '3002',
 	},
 
+	// 30** 开头均为数据库类错误
+
+	/** 邮件发送失败 */
+	SendMailError: {
+		status: '0',
+		info: 'SEND_MAIL_ERROR',
+		infocode: '3000',
+	},
+
 	// 40** 开头均为数据库类错误
 
 	/** 数据库查询错误 */
@@ -121,6 +130,18 @@ const data = {
 		status: '0',
 		info: 'USER_NO_PERMISSION',
 		infocode: '5000',
+	},
+	/** 用户权限已被变更*/
+	UserPermissionsBeenChanged: {
+		status: '0',
+		info: 'USER_PERMSSIONS_BEEN_CHANGED',
+		infocode: '5001',
+	},
+	/** 管理员没有权限修改其他管理员账号 */
+	AdministratorPermissionsError: {
+		status: '0',
+		info: 'ADMIN_NO_PERMISSION',
+		infocode: '5002',
 	},
 };
 

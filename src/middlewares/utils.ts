@@ -1,11 +1,17 @@
 import { Context, Next } from 'koa';
 import jwt from 'jsonwebtoken';
-import { JWT_SECRET } from '../config/config';
+import { Users } from '../models';
+import svgCaptcha from 'svg-captcha';
+import chalk from 'chalk';
+import { CAPTCHA_LENGTH, JWT_SECRET } from '../config/config';
 import {
 	TokenExpiredError,
 	InvalidTokenError,
+	SendMailError,
 } from '../middlewares/errors/globalError';
 import { UserTokenInfoType, tokenCertificationType } from '../global';
+import { InfoEmail } from '../utils/email';
+import { success } from '../utils/utils';
 
 /**
  *【 中间件 】- 令牌认证
@@ -17,7 +23,8 @@ const tokenCertification = ({ exclude }: tokenCertificationType) => {
 			const { authorization = '' } = ctx.request.header;
 			const token = authorization.replace('Bearer ', '');
 			try {
-				jwt.verify(token, JWT_SECRET);
+				const { account } = jwt.verify(token, JWT_SECRET) as UserTokenInfoType;
+				ctx.state.userInfo = await Users.findOne({ account });
 			} catch (error: any) {
 				switch (error.name) {
 					case 'TokenExpiredError':
@@ -26,15 +33,34 @@ const tokenCertification = ({ exclude }: tokenCertificationType) => {
 						return ctx.app.emit('info', InvalidTokenError, ctx, 401);
 				}
 			}
-			const { account, status } = jwt.verify(
-				token,
-				JWT_SECRET
-			) as UserTokenInfoType;
 		}
-		// 这里处理用户信息更改之后，立刻取消修改token的权限
-		// ctx.state.userTokenInfo
-
 		await next();
 	};
 };
-export { tokenCertification };
+
+/**
+ *【 中间件 】- 发送验证码
+ * @param  {string | string[] }  exclude 需要忽略的路由，注意如果有前缀，记得带上路由前缀
+ */
+const sendVerificationCode = async (ctx: Context, next: Next) => {
+	const { email } = ctx.request.body;
+	const code = svgCaptcha.create({
+		size: CAPTCHA_LENGTH,
+	}).text;
+	try {
+		const { state } = await InfoEmail(email, {
+			recipient: email,
+			subject: '[ 验证码 ] 验证此邮箱',
+			text: `您正在操作进行敏感操作，我们需要验证是您本人操作。   验证码: ${code}`,
+		});
+		if (state) {
+			ctx.body = success({});
+		} else {
+			return ctx.app.emit('error', SendMailError, ctx);
+		}
+	} catch (error) {
+		console.error(chalk.red(error));
+		return ctx.app.emit('error', SendMailError, ctx);
+	}
+};
+export { tokenCertification, sendVerificationCode };
