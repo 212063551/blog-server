@@ -49,40 +49,39 @@ const MongoConnect = () => {
 	return db;
 };
 
-const RedisConnect = () => {
-	/** 连接redis */
-	const redis = new Redis({
-		/** redis服务器默认端口号 */
-		port: REDIS_PORT,
-		/** redis服务器的IP地址 */
-		host: MongDB_IP,
-		password: REDIS_PASSWORD,
-		db: 0,
-	});
-	redis.on('connecting', () => {
-		console.error(`${chalk.yellow('[redis] 正在连接中...')}`);
-	});
-	redis.on('connect', () => {
-		console.error(`${chalk.blue('[redis] Redis已正常连接')}`);
-	});
-	redis.on('error', (error) => {
-		console.error(`${chalk.red('[redis] Redis连接出错', error)}`);
-		if (retryCount < MAX_RETRIES) {
-			/** 增加重试计数器 */
-			retryCount++;
-			console.error(chalk.yellow(`[redis] 正在进行第 ${retryCount} 次重试...`));
-			setTimeout(() => {
-				redis.connect();
-			}, 3000);
-		} else {
-			console.error(chalk.red('[mongodb] 重试次数已达上限，停止重试'));
-			throw new Error('无法连接到 MongoDB');
-		}
-	});
-	redis.on('close', () => {
-		console.error(`${chalk.yellow('[redis] 连接断开，重新连接')}`);
-		redis.connect();
-	});
-};
+/** 连接redis */
+const redis = new Redis({
+	/** redis服务器默认端口号 */
+	port: REDIS_PORT,
+	/** redis服务器的IP地址 */
+	host: MongDB_IP,
+	/** redis服务器的密码 */
+	password: REDIS_PASSWORD,
+	db: 0,
+});
+redis.on('connecting', () => {
+	console.error(`${chalk.yellow('[redis] 正在连接中...')}`);
+});
+redis.on('connect', () => {
+	console.error(`${chalk.blue('[redis] Redis已正常连接')}`);
+});
+redis.on('error', (error) => {
+	console.error(`${chalk.red('[redis] Redis连接出错', error)}`);
+	if (retryCount < MAX_RETRIES) {
+		/** 增加重试计数器 */
+		retryCount++;
+		console.error(chalk.yellow(`[redis] 正在进行第 ${retryCount} 次重试...`));
+		setTimeout(() => {
+			redis.connect();
+		}, 3000);
+	} else {
+		console.error(chalk.red('[mongodb] 重试次数已达上限，停止重试'));
+		throw new Error('无法连接到 MongoDB');
+	}
+});
+redis.on('close', () => {
+	console.error(`${chalk.yellow('[redis] 连接断开，重新连接')}`);
+	redis.connect();
+});
 
-export { MongoConnect, RedisConnect };
+export { MongoConnect, redis };
