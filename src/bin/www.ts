@@ -18,7 +18,9 @@ AutoLoadRoutes(router);
 server.use(cors({}));
 server.use(bodyConfig());
 server.use(staticDir('./public'));
-server.use(tokenCertification({ exclude: ['/login', '/register', '/code'] }));
+server.use(
+	tokenCertification({ exclude: ['/login', '/register', '/sendcode'] })
+);
 server.use(views(path.join(__dirname, '../views'), { extension: 'ejs' }));
 server.use(router.routes());
 server.on('info', errorHandler);
