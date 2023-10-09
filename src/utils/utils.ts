@@ -22,7 +22,7 @@ const NameFormat = /^[\u4E00-\u9FA5A-Za-z0-9_]{1,20}$/;
 const AccountFormat = /^[a-zA-Z0-9_]{11}$/;
 
 /** 成功返回 */
-const success = ({ data }: { data?: any | any[] }) => {
+const success = ({ data }: { data?: any | any[] } = {}) => {
 	return {
 		status: '1',
 		info: 'OK',

@@ -101,8 +101,8 @@ const InfoEmail = async (key: string, options: MailboxValueType) => {
 		const remainingTime = 60 * 1000 - timeDiff;
 		if (remainingTime > 0) {
 			return {
-				state: true,
-				msg: `请勿频繁请求验证码！`,
+				state: false,
+				error: `请勿频繁请求验证码！`,
 			};
 		}
 	}
