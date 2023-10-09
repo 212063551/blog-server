@@ -2,53 +2,34 @@ import chalk from 'chalk';
 import jwt from 'jsonwebtoken';
 import { Users } from '../../models';
 import { QueryKeywordType, RegisterValueType } from '../../global';
-import { calculateHash, convertToNormalTime } from '../../utils/utils';
+import { convertToNormalTime } from '../../utils/utils';
 import { JWT_SECRET, REFRESH_JWT_SECRET } from '../../config/config';
 import { passwordEncryption } from '../../utils/utils';
-import { redis } from '../../db/db';
 
 /**
  * @privateAPI
  *【 服务API 】- 查询全部用户
- * @param {number} page - 页码
- * @param {number} limit - 每页显示的数量
  */
-const queryAllUsersAPI = async ({
-	page,
-	limit,
-}: {
-	page: number;
-	limit: number;
-}) => {
+const queryAllUsersAPI = async () => {
 	try {
-		/** 使用聚合管道查询用户并进行分页 */
-		const [usersInfoData, totalDocuments] = await Promise.all([
-			Users.aggregate([
-				{ $skip: (page - 1) * limit },
-				{ $limit: limit },
-				{ $match: {} },
-				{
-					$project: {
-						nickname: 1,
-						account: 1,
-						email: 1,
-						status: 1,
-						avatarUrl: 1,
-						introduction: 1,
-						createdAt: 1,
-						updatedAt: 1,
-					},
-				},
-			]),
-			Users.aggregate([{ $count: 'count' }]),
-		]);
-		const userInfo = usersInfoData.map((item, i) => {
-			item.createdAt = convertToNormalTime(item.createdAt);
-			item.updatedAt = convertToNormalTime(item.updatedAt);
-			return item;
-		});
-		const total = totalDocuments[0]?.count || 0;
-		return { state: true, data: { total, rows: userInfo } };
+		try {
+			const usersInfoData: any = await Users.find({})
+				.select('-__v -_id -password')
+				.exec();
+			const userInfo = usersInfoData.map(
+				(item: { createdAt: string; updatedAt: string }) => {
+					item.createdAt = convertToNormalTime(item.createdAt);
+					item.updatedAt = convertToNormalTime(item.updatedAt);
+					return item;
+				}
+			);
+			return {
+				state: true,
+				data: userInfo,
+			};
+		} catch (error) {
+			return { state: false, error };
+		}
 	} catch (error) {
 		console.error(chalk.red(error));
 		return { state: false, error };
