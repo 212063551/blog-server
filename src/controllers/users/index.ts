@@ -26,11 +26,7 @@ import { RegisterReturnType, RegisterValueType } from '../../global';
  *【 服务 】- 查询全部用户
  */
 const queryAllUsers = async (ctx: Context) => {
-	const { pageSize, pageCurrent } = ctx.request.query;
-	const { state, data, error } = await queryAllUsersAPI({
-		page: Number(pageSize),
-		limit: Number(pageCurrent),
-	});
+	const { state, data, error } = await queryAllUsersAPI();
 	if (state) {
 		return (ctx.body = success({ data }));
 	} else {
@@ -171,7 +167,7 @@ const reviseUsers = async (ctx: Context) => {
  * @privateAPI
  *【 服务 】- 删除用户
  */
-const strikeUsers = async (ctx: Context) => {
+const deleteUsers = async (ctx: Context) => {
 	const { account } = ctx.request.body;
 	if (!(await Users.findOne({ account }))) {
 		return ctx.app.emit('info', FindAccountError, ctx);
@@ -191,6 +187,6 @@ export {
 	register,
 	login,
 	reviseUsers,
-	strikeUsers,
+	deleteUsers,
 	revisePassword,
 };
