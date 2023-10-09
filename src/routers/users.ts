@@ -6,7 +6,7 @@ import {
 	register,
 	login,
 	reviseUsers,
-	strikeUsers,
+	deleteUsers,
 	revisePassword,
 } from '../controllers/users';
 import {
@@ -24,17 +24,15 @@ import {
 /**
  * @public
  * 查询全部用户
- * @param {number} pageSize - 当前页码，默认 1
- * @param {number} pageCurrent - 每页显示的数量，默认 10
  */
-router.get('queryallusers', manageLicenses, pagination, queryAllUsers);
+router.get('allusers', manageLicenses, queryAllUsers);
 
 /**
  * @public
  *【 路由 】- 根据关禁词查询用户
  * @param {number} pageSize - 当前页码，默认 1
  * @param {number} pageCurrent - 每页显示的数量，默认 10
- * @param {string} keyword - 当前页码，默认 1
+ * @param {string} keyword - 关键字
  */
 router.post('queryusers', manageLicenses, pagination, queryUsers);
 
@@ -85,9 +83,9 @@ router.put('reviseusers', userValueCheck, userMailboxExists, reviseUsers);
 
 /**
  * @public
- *【 路由 】- 修改用户信息
+ *【 路由 】- 删除用户信息
  * @param {string｜string[] } account - 账号
  */
-router.delete('strikeusers', manageLicenses, strikeUsers);
+router.delete('deleteusers', manageLicenses, deleteUsers);
 
 export default router;
