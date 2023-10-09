@@ -1,4 +1,6 @@
 const data = {
+	//  用户模块错误 10** 开头
+
 	/** 缺少必需的参数 */
 	MissingRequiredError: {
 		status: '0',
@@ -82,6 +84,15 @@ const data = {
 		status: '0',
 		info: 'LOGIN_ERROR',
 		infocode: '1014',
+	},
+
+	// 文章模块错误 11** 开头
+
+	/** 查询所有文章错误 */
+	AllarticleError: {
+		status: '0',
+		info: ' QUERY_ALL_ARTICLES_ERROR',
+		infocode: '1101',
 	},
 
 	// 30** 开头均为令牌类错误
