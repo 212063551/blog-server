@@ -1,3 +1,5 @@
+import { type } from 'os';
+
 /**
  * 访问Token里存储的内容
  */
@@ -117,3 +119,4 @@ export type tokenCertificationType = {
 	 */
 	exclude: string | string[];
 };
+type ItemKey = number | string;
