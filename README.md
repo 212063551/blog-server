@@ -6,11 +6,11 @@
 
 所有 API 均遵守以下规则
 
-- 查询全部 `queryAll`
+- 查询全部 `all`
 - 关键字查询 `query`
 - 添加 `add`
 - 修改 `revise`
-- 删除 `strike`
+- 删除 `delete`
 
 ### 运行配置
 
