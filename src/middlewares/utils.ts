@@ -42,25 +42,25 @@ const tokenCertification = ({ exclude }: tokenCertificationType) => {
  *【 中间件 】- 发送验证码
  * @param  {string | string[] }  exclude 需要忽略的路由，注意如果有前缀，记得带上路由前缀
  */
-const sendVerificationCode = async (ctx: Context, next: Next) => {
+const sendVerificationCode = async (ctx: Context) => {
 	const { email } = ctx.request.body;
 	const code = svgCaptcha.create({
 		size: CAPTCHA_LENGTH,
 	}).text;
 	try {
-		const { state } = await InfoEmail(email, {
+		const { state, error } = await InfoEmail(email, {
 			recipient: email,
 			subject: '[ 验证码 ] 验证此邮箱',
-			text: `您正在操作进行敏感操作，我们需要验证是您本人操作。   验证码: ${code}`,
+			text: `您正在操作进行敏感操作，我们需要验证是您本人操作。 验证码: ${code}`,
 		});
 		if (state) {
-			ctx.body = success({});
+			ctx.body = success();
 		} else {
-			return ctx.app.emit('error', SendMailError, ctx);
+			return ctx.app.emit('info', error, ctx);
 		}
 	} catch (error) {
 		console.error(chalk.red(error));
-		return ctx.app.emit('error', SendMailError, ctx);
+		return ctx.app.emit('info', SendMailError, ctx);
 	}
 };
 export { tokenCertification, sendVerificationCode };
